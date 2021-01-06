@@ -45,7 +45,11 @@ logrus.WithFields(logrus.Fields{
 	})
 ```
 
-Google Cloud understands special request-related fields, and are put in the `httpRequest` field in the log entry. GCPLog defines constants for a few of them. 
+Google Cloud understands special request-related fields, and are put in the `httpRequest` field in the log entry. 
+
+If you use a Google managed service (such as Cloud Run or App Engine) and provide the trace context to the logger, there's no need to log these fields explicitly. GCP will log a master record for each request that with the HTTP Request information. By connecting individual log entries to the master record via the trace ID, the information is already available. 
+
+However, if you need to log this separately, GCPLog defines constants for a few of them. 
 
 | Key | Sample Use |
 | --- | --- | 
@@ -58,21 +62,20 @@ You MUST set the gcpLog.RequestMethod field for GCPLog to recognize that you are
 
 
 
-### GRPC Fields 
-In addition to the request fields understood by GCP, GCPLog also defines a special set of fields related to gRPC requests. These entries are logged in a separate JSON object in the log entry. 
+### GRPC Status
+When providing a gRPC status for an API using the standard gRPC status (https://godoc.org/google.golang.org/grpc/status), you can log this directly to GCPLog with the key gcpLog.GrpcStatus. GCPLog will recognize the gRPC status and log each field separately. 
 
 See https://cloud.google.com/apis/design/errors for more information on the fields. 
 
-| Key | Sample Use |
-| --- | --- | 
-| gcpLog.GrpcCode | 2 |
-| gcpLog.GrpcMessage | My message |
-| gcpLog.GrpcDetails | []string{"blah", "foo"} |
+Example:
 
+```go
 
+logrus.WithField(gcplog.GrpcStatus, status.Errorf(codes.NotFound, "blah with key %s not found", "myid")).Info("Blah")
 
-
-
+	// Output:
+	// {"message":"Blah","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
+```
 
 
 ### Basic Usage

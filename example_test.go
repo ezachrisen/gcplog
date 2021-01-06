@@ -7,6 +7,8 @@ import (
 	"github.com/ezachrisen/gcplog"
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func ExampleBasic() {
@@ -62,21 +64,6 @@ func ExampleWithRequestDetails() {
 
 }
 
-func ExampleWithGRPCDetails() {
-
-	logrus.SetOutput(os.Stdout) // required for testing only
-	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
-
-	logrus.WithFields(logrus.Fields{
-		gcplog.GrpcCode:    2,
-		gcplog.GrpcMessage: "My GRPC Message here",
-		gcplog.GrpcDetails: []string{"Blah", "foo", "bar"},
-	}).Info("My info message here")
-
-	// Output:
-	// {"message":"My info message here","severity":"INFO","grpc":{"code":"2","message":"My GRPC Message here","details":"[Blah foo bar]"}}
-}
-
 func ExampleError() {
 
 	logrus.SetOutput(os.Stdout) // required for testing only
@@ -84,4 +71,14 @@ func ExampleError() {
 
 	logrus.Error("NOOOOOO!")
 	// No output shown; run this separately to see the stacktrace
+}
+
+func ExampleGrpcStatus() {
+
+	logrus.SetOutput(os.Stdout) // required for testing only
+	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
+
+	logrus.WithField(gcplog.GrpcStatus, status.Errorf(codes.NotFound, "blah with key %s not found", "myid")).Info("Blah")
+	// Output:
+	// {"message":"Blah","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
 }

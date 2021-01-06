@@ -6,19 +6,20 @@ import (
 	"path"
 	"runtime/debug"
 
-	"go.opencensus.io/trace"
-
 	"github.com/sirupsen/logrus"
+	"go.opencensus.io/trace"
+	"google.golang.org/grpc/status"
 )
 
 const (
 	RequestMethod = "requestMethod"
 	RequestUrl    = "requestUrl"
 	Latency       = "latency"
-	GrpcCode      = "grpcCode"
-	GrpcMessage   = "grpcMessage"
-	GrpcDetails   = "grpcDetails"
-	HTTPStatus    = "status"
+	// GrpcCode      = "grpcCode"
+	// GrpcMessage   = "grpcMessage"
+	// GrpcDetails   = "grpcDetails"
+	HTTPStatus = "status"
+	GrpcStatus = "grpcStatus"
 )
 
 type Formatter struct {
@@ -109,31 +110,35 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 	}
 
-	if entry.Data != nil {
-		if requestMethod, ok := entry.Data[RequestMethod]; ok && requestMethod != "" {
-			e.Request = &Request{
-				RequestMethod: fmt.Sprintf("%v", requestMethod),
-				RequestUrl:    fmt.Sprintf("%v", entry.Data[RequestUrl]),
-				Latency:       fmt.Sprintf("%v", entry.Data[Latency]),
+	// Extract a gRPC Status type
+	// https://godoc.org/google.golang.org/grpc/status
+	if v, ok := entry.Data[GrpcStatus]; ok {
+		if err, ok := v.(error); ok {
+			if s, ok := status.FromError(err); ok {
+				e.GRPCStatus = &GRPCStatus{
+					Code:    fmt.Sprintf("%v", s.Code()),
+					Message: fmt.Sprintf("%s", s.Message()),
+				}
+				if len(s.Details()) > 0 {
+					e.GRPCStatus.Details = fmt.Sprintf("%v", s.Details())
+				}
+				delete(entry.Data, GrpcStatus)
 			}
-			delete(entry.Data, RequestMethod)
-			delete(entry.Data, RequestUrl)
-			delete(entry.Data, Latency)
 		}
-
-		if code, ok := entry.Data[GrpcCode]; ok && code != "" {
-			e.GRPCStatus = &GRPCStatus{
-				Code:    fmt.Sprintf("%v", code),
-				Message: fmt.Sprintf("%s", entry.Data[GrpcMessage]),
-				Details: fmt.Sprintf("%v", entry.Data[GrpcDetails]),
-			}
-			delete(entry.Data, GrpcCode)
-			delete(entry.Data, GrpcMessage)
-			delete(entry.Data, GrpcDetails)
-		}
-		e.Additional = entry.Data
 	}
 
+	if requestMethod, ok := entry.Data[RequestMethod]; ok && requestMethod != "" {
+		e.Request = &Request{
+			RequestMethod: fmt.Sprintf("%v", requestMethod),
+			RequestUrl:    fmt.Sprintf("%v", entry.Data[RequestUrl]),
+			Latency:       fmt.Sprintf("%v", entry.Data[Latency]),
+		}
+		delete(entry.Data, RequestMethod)
+		delete(entry.Data, RequestUrl)
+		delete(entry.Data, Latency)
+	}
+
+	e.Additional = entry.Data
 	serialized, err := json.Marshal(e)
 	if err != nil {
 		return nil, err
