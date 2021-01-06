@@ -63,11 +63,11 @@ In addition to the request fields understood by GCP, GCPLog also defines a speci
 
 See https://cloud.google.com/apis/design/errors for more information on the fields. 
 
-| Key |
-| --- | 
-| gcpLog.GrpcCode |
-| gcpLog.GrpcMessage |
-| gcpLog.GrpcDetails |
+| Key | Sample Use |
+| --- | --- | 
+| gcpLog.GrpcCode | 2 |
+| gcpLog.GrpcMessage | My message |
+| gcpLog.GrpcDetails | []string{"blah", "foo"} |
 
 
 
@@ -77,6 +77,8 @@ See https://cloud.google.com/apis/design/errors for more information on the fiel
 
 ### Basic Usage
 
+See the examples for more.
+
 ```go 
 import (
 	"github.com/ezachrisen/gcplog"
@@ -84,8 +86,18 @@ import (
 )
 
 func main() {
-	logrus.SetFormatter(&applog.Formatter{})
+	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
+
 	logrus.Info("Hello")
-	// Output: {"message":"Hello","severity":"info"}
+
+	logrus.WithFields(logrus.Fields{
+		"animal": "walrus",
+		"number": 1,
+	}).Info("My info message here")
+
+	// Output:
+	// {"message":"Hello","severity":"INFO"}
+	// {"message":"My info message here","severity":"INFO","additional_info":{"animal":"walrus","number":1}}
 }
 ```
+
