@@ -36,7 +36,7 @@ logrus.WithContext(ctx).Info("My message here")
 
 GCP requires that the trace ID be logged with the project name, therefore you must initialize GCPFormatter with the project ID. 
 
-### Structureed Request Data
+### Structured Request Data
 Logrus lets you pass structured fields (key value pairs) to log, like this:
 
 ```go
@@ -48,10 +48,14 @@ logrus.WithFields(logrus.Fields{
 Google Cloud understands special request-related fields. GCPLog defines constants for a few of them. 
 
 | Key | Sample Use |
+| --- | --- | 
 | gcpLog.RequestMethod | "GET" |
 | gcpLog.RequestURL | "https://blah.com/MyAPIName" |
 | gcpLog.Latency | 123ms |
 | gcpLog.HTTPStatus | 200 |
+
+
+
 
 
 ### GRPC Fields 
