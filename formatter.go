@@ -1,4 +1,4 @@
-package applog
+package gcplog
 
 import (
 	"encoding/json"
@@ -12,17 +12,16 @@ import (
 )
 
 const (
-	// gcpTraceHeaderKey = "gcp-bin-trace"
-	// grpcHeader        = "grpc-trace-bin"
-	requestMethod = "requestMethod"
-	requestUrl    = "requestUrl"
-	latency       = "latency"
-	grpcCode      = "grpcCode"
-	grpcMessage   = "grpcMessage"
-	grpcDetails   = "grpcDetails"
+	RequestMethod = "requestMethod"
+	RequestUrl    = "requestUrl"
+	Latency       = "latency"
+	GrpcCode      = "grpcCode"
+	GrpcMessage   = "grpcMessage"
+	GrpcDetails   = "grpcDetails"
+	HTTPStatus    = "status"
 )
 
-type GRPCFormatter struct {
+type Formatter struct {
 	ProjectID string
 }
 
@@ -33,15 +32,15 @@ type googleLogEntry struct {
 	TraceID        string          `json:"logging.googleapis.com/trace,omitempty"`
 	Type           string          `json:"@type,omitempty"`
 	SourceLocation *sourceLocation `json:"logging.googleapis.com/sourceLocation,omitempty"`
-	HttpRequest    HttpRequest     `json:"httpRequest,omitempty"`
-	GRPCStatus     GRPCStatus      `json:"grpc,omitempty"`
+	Request        *Request        `json:"httpRequest,omitempty"`
+	GRPCStatus     *GRPCStatus     `json:"grpc,omitempty"`
 }
 
-// Log this so Cloud Logging will parse it and display the information on the header line
-type HttpRequest struct {
+type Request struct {
 	RequestMethod string `json:"requestMethod,omitempty"`
 	RequestUrl    string `json:"requestUrl,omitempty"`
 	Latency       string `json:"latency,omitempty"`
+	HTTPStatus    string `json:"status,omitempty"`
 }
 
 type GRPCStatus struct {
@@ -50,23 +49,6 @@ type GRPCStatus struct {
 	Details string `json:"details,omitempty"`
 }
 
-// {
-// 	"requestMethod": string,
-// 	"requestUrl": string,
-// 	"requestSize": string,
-// 	"status": integer,
-// 	"responseSize": string,
-// 	"userAgent": string,
-// 	"remoteIp": string,
-// 	"serverIp": string,
-// 	"referer": string,
-// 	"latency": string,
-// 	"cacheLookup": boolean,
-// 	"cacheHit": boolean,
-// 	"cacheValidatedWithOriginServer": boolean,
-// 	"cacheFillBytes": string,
-// 	"protocol": string
-//   }
 type sourceLocation struct {
 	File     string `json:"file,omitempty"`
 	Line     int    `json:"line,omitempty"`
@@ -75,16 +57,31 @@ type sourceLocation struct {
 
 const errorType = "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent"
 
+var levels = map[logrus.Level]string{
+	logrus.InfoLevel:  "INFO",
+	logrus.DebugLevel: "DEBUG",
+	logrus.TraceLevel: "DEBUG",
+	logrus.WarnLevel:  "WARNING",
+	logrus.ErrorLevel: "ERROR",
+	logrus.PanicLevel: "CRITICAL",
+	logrus.FatalLevel: "CRITICAL",
+}
+
 // Format logrus output per Google Cloud guidelines.
 // See https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry for details.
 //
 // See the examples for usage.
-func (f *GRPCFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
+
+	level, ok := levels[entry.Level]
+	if !ok {
+		level = "INFO"
+	}
 
 	e := googleLogEntry{
-		Message:    entry.Message,
-		Severity:   entry.Level.String(),
-		Additional: entry.Data,
+		Message:  entry.Message,
+		Severity: level, // entry.Level.String(),
+		//	Additional: entry.Data,
 	}
 
 	if entry.Caller != nil {
@@ -108,21 +105,26 @@ func (f *GRPCFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	if entry.Data != nil {
-		//		fmt.Printf("entry.Data (%s) = %v\n", e.TraceID, entry.Data)
-		if requestMethod, ok := entry.Data[requestMethod]; ok && requestMethod != "" {
-			e.HttpRequest = HttpRequest{
+		if requestMethod, ok := entry.Data[RequestMethod]; ok && requestMethod != "" {
+			e.Request = &Request{
 				RequestMethod: fmt.Sprintf("%v", requestMethod),
-				RequestUrl:    fmt.Sprintf("%v", entry.Data[requestUrl]),
-				Latency:       fmt.Sprintf("%s", entry.Data[latency]),
+				RequestUrl:    fmt.Sprintf("%v", entry.Data[RequestUrl]),
+				Latency:       fmt.Sprintf("%v", entry.Data[Latency]),
 			}
+			delete(entry.Data, RequestMethod)
+			delete(entry.Data, RequestUrl)
+			delete(entry.Data, Latency)
 		}
 
-		if code, ok := entry.Data[grpcCode]; ok && code != "" {
-			e.GRPCStatus = GRPCStatus{
+		if code, ok := entry.Data[GrpcCode]; ok && code != "" {
+			e.GRPCStatus = &GRPCStatus{
 				Code:    fmt.Sprintf("%v", code),
-				Message: fmt.Sprintf("%s", entry.Data[grpcMessage]),
-				Details: fmt.Sprintf("%v", entry.Data[grpcDetails]),
+				Message: fmt.Sprintf("%s", entry.Data[GrpcMessage]),
+				Details: fmt.Sprintf("%v", entry.Data[GrpcDetails]),
 			}
+			delete(entry.Data, GrpcCode)
+			delete(entry.Data, GrpcMessage)
+			delete(entry.Data, GrpcDetails)
 		}
 		e.Additional = entry.Data
 	}

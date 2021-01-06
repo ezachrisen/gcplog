@@ -80,6 +80,8 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/go-control-plane v0.9.7/go.mod h1:cwu0lG7PUMfa9snN8LXBig5ynNVH9qI8YYLbd1fK2po=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/ezachrisen/applog v0.0.0-20201218140550-25d5c490cd95 h1:FlPc5pS3pZFVguyCSPthqujcxpAw3HNjlxRcB1kvDCo=
+github.com/ezachrisen/applog v0.0.0-20201218140550-25d5c490cd95/go.mod h1:W5l1tzsLQD4vWdgkOrHX2fG8wk8rjGp9mp3n1jrcHPs=
 github.com/ezachrisen/cloudrun_statshandler v0.0.0-20210105145217-4277f70b34d1 h1:qpUNz2egZe2gBf7fsrxB2YM6nohEvL3qdlYUmxq/9zg=
 github.com/ezachrisen/cloudrun_statshandler v0.0.0-20210105145217-4277f70b34d1/go.mod h1:xhP1AP2V7u5DjufVXFDLiaVmkp8jRgLe2zAolD+mq2k=
 github.com/ezachrisen/indigo v0.5.2 h1:lkvYZyqfADwIDQFDlV8fpNWU8mKV0YXtZ4NAzOXyLRI=
@@ -414,6 +416,7 @@ golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 h1:HyfiK1WMnHj5FXFXatD+Qs1A/
 golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191001151750-bb3f8db39f24/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 h1:YyJpGZS1sBuBCzLAR1VEpK193GlqGZbnPFnPV/5Rsb4=
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191204072324-ce4227a45e2e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191228213918-04cbcbbfeed8/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
