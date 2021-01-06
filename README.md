@@ -45,7 +45,7 @@ logrus.WithFields(logrus.Fields{
 	})
 ```
 
-Google Cloud understands special request-related fields. GCPLog defines constants for a few of them. 
+Google Cloud understands special request-related fields, and are put in the `httpRequest` field in the log entry. GCPLog defines constants for a few of them. 
 
 | Key | Sample Use |
 | --- | --- | 
@@ -54,7 +54,7 @@ Google Cloud understands special request-related fields. GCPLog defines constant
 | gcpLog.Latency | 123ms |
 | gcpLog.HTTPStatus | 200 |
 
-
+You MUST set the gcpLog.RequestMethod field for GCPLog to recognize that you are passing these values, otherwise no `httpRequest` entry will be created.
 
 
 
