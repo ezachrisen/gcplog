@@ -67,16 +67,21 @@ var levels = map[logrus.Level]string{
 	logrus.FatalLevel: "CRITICAL",
 }
 
+func getGCPLevel(level logrus.Level) string {
+
+	levelstring, ok := levels[level]
+	if !ok {
+		levelstring = "INFO"
+	}
+	return levelstring
+}
+
 // Format logrus output per Google Cloud guidelines.
 // See https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry for details.
 //
 // See the examples for usage.
 func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
-
-	level, ok := levels[entry.Level]
-	if !ok {
-		level = "INFO"
-	}
+	level := getGCPLevel(entry.Level)
 
 	e := googleLogEntry{
 		Message:  entry.Message,

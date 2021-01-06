@@ -101,3 +101,5 @@ func main() {
 }
 ```
 
+### Console Formatter
+For local debugging and testing, a bare-bones formatter is provided. This is indentended to log to the terminal. 
