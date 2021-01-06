@@ -1,6 +1,7 @@
 package gcplog
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -131,7 +132,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return append(serialized, '\n'), nil
 }
 
-func GRPC(err error) {
+func GRPC(ctx context.Context, err error) {
 
-	logrus.WithField(GrpcStatus, err).Info(GrpcStatusBlankMessage)
+	logrus.WithContext(ctx).WithField(GrpcStatus, err).Info(GrpcStatusBlankMessage)
 }

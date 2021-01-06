@@ -71,7 +71,7 @@ func ExampleGrpcStatusConvenience() {
 	logrus.SetOutput(os.Stdout) // required for testing only
 	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
 
-	gcplog.GRPC(status.Errorf(codes.NotFound, "blah with key %s not found", "myid"))
+	gcplog.GRPC(context.Background(), status.Errorf(codes.NotFound, "blah with key %s not found", "myid"))
 	// Output:
 	// {"message":"blah with key myid not found","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
 }
