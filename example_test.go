@@ -47,23 +47,6 @@ func ExampleTraceID() {
 	// {"message":"No trace here","severity":"INFO"}
 }
 
-func ExampleWithRequestDetails() {
-
-	logrus.SetOutput(os.Stdout) // required for testing only
-	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
-
-	logrus.WithFields(logrus.Fields{
-		gcplog.RequestMethod: "GET",
-		gcplog.RequestUrl:    "http://blah.com/myAPI",
-		gcplog.Latency:       100,
-		"mydata":             "customdata here",
-	}).Info("My info message here")
-
-	// Output:
-	// {"message":"My info message here","severity":"INFO","additional_info":{"mydata":"customdata here"},"httpRequest":{"requestMethod":"GET","requestUrl":"http://blah.com/myAPI","latency":"100"}}
-
-}
-
 func ExampleError() {
 
 	logrus.SetOutput(os.Stdout) // required for testing only
@@ -81,4 +64,14 @@ func ExampleGrpcStatus() {
 	logrus.WithField(gcplog.GrpcStatus, status.Errorf(codes.NotFound, "blah with key %s not found", "myid")).Info("Blah")
 	// Output:
 	// {"message":"Blah","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
+}
+
+func ExampleGrpcStatusConvenience() {
+
+	logrus.SetOutput(os.Stdout) // required for testing only
+	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
+
+	gcplog.GRPC(status.Errorf(codes.NotFound, "blah with key %s not found", "myid"))
+	// Output:
+	// {"message":"blah with key myid not found","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
 }

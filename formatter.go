@@ -12,14 +12,8 @@ import (
 )
 
 const (
-	RequestMethod = "requestMethod"
-	RequestUrl    = "requestUrl"
-	Latency       = "latency"
-	// GrpcCode      = "grpcCode"
-	// GrpcMessage   = "grpcMessage"
-	// GrpcDetails   = "grpcDetails"
-	HTTPStatus = "status"
-	GrpcStatus = "grpcStatus"
+	GrpcStatus             = "grpcStatus"
+	GrpcStatusBlankMessage = "!"
 )
 
 type Formatter struct {
@@ -86,8 +80,7 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	e := googleLogEntry{
 		Message:  entry.Message,
-		Severity: level, // entry.Level.String(),
-		//	Additional: entry.Data,
+		Severity: level,
 	}
 
 	if entry.Caller != nil {
@@ -123,19 +116,11 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 					e.GRPCStatus.Details = fmt.Sprintf("%v", s.Details())
 				}
 				delete(entry.Data, GrpcStatus)
+				if entry.Message == GrpcStatusBlankMessage {
+					e.Message = s.Message()
+				}
 			}
 		}
-	}
-
-	if requestMethod, ok := entry.Data[RequestMethod]; ok && requestMethod != "" {
-		e.Request = &Request{
-			RequestMethod: fmt.Sprintf("%v", requestMethod),
-			RequestUrl:    fmt.Sprintf("%v", entry.Data[RequestUrl]),
-			Latency:       fmt.Sprintf("%v", entry.Data[Latency]),
-		}
-		delete(entry.Data, RequestMethod)
-		delete(entry.Data, RequestUrl)
-		delete(entry.Data, Latency)
 	}
 
 	e.Additional = entry.Data
@@ -144,4 +129,9 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		return nil, err
 	}
 	return append(serialized, '\n'), nil
+}
+
+func GRPC(err error) {
+
+	logrus.WithField(GrpcStatus, err).Info(GrpcStatusBlankMessage)
 }
