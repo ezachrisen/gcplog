@@ -132,7 +132,14 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return append(serialized, '\n'), nil
 }
 
-func GRPC(ctx context.Context, err error) {
-
+func GrpcInfo(ctx context.Context, err error) {
 	logrus.WithContext(ctx).WithField(GrpcStatus, err).Info(GrpcStatusBlankMessage)
+}
+
+func GrpcWarn(ctx context.Context, err error) {
+	logrus.WithContext(ctx).WithField(GrpcStatus, err).Warn(GrpcStatusBlankMessage)
+}
+
+func GrpcError(ctx context.Context, err error) {
+	logrus.WithContext(ctx).WithField(GrpcStatus, err).Error(GrpcStatusBlankMessage)
 }

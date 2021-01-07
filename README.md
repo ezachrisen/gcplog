@@ -1,5 +1,7 @@
 # GCPLog
 
+Go log printer for Google Cloud Platform using Logrus.
+
 GCPLog formats [logrus](https://github.com/sirupsen/logrus) output for Google Cloud Platform:
 - Errors are sent to Google Error Reporting with a stacktrace
 - Code calling location is formatted with file, line and module
@@ -7,6 +9,32 @@ GCPLog formats [logrus](https://github.com/sirupsen/logrus) output for Google Cl
 
 ### Google Cloud Platform Logging Specification
 The correct formatting of log entries is specified here: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry.
+
+
+### Basic Usage
+
+See the examples for more.
+
+```go 
+import (
+	"github.com/ezachrisen/gcplog"
+	log "github.com/sirupsen/logrus"
+)
+
+func main() {
+	log.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
+
+	log.Info("Hello")
+	logrus.WithFields(logrus.Fields{
+		"animal": "walrus",
+		"number": 1,
+	}).Info("My info message here")
+
+	// Output:
+	// {"message":"Hello","severity":"INFO"}
+	// {"message":"My info message here","severity":"INFO","additional_info":{"animal":"walrus","number":1}}
+}
+```
 
 
 ### Log Level Mapping
@@ -31,77 +59,34 @@ The following mapping is used between log levels:
 If an OpenCensus trace is present in the context, use it to add it to the log entry. In order to take advantage of this, you must pass the context to logrus when logging:
 
 ```
-logrus.WithContext(ctx).Info("My message here")
+	logrus.WithContext(ctx).Infof("My info here %d", 100)
+	// Output:
+	// {"message":"My info here 100","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667"}
 ```
 
 GCP requires that the trace ID be logged with the project name, therefore you must initialize GCPFormatter with the project ID. 
 
-### Structured Request Data
-Logrus lets you pass structured fields (key value pairs) to log, like this:
-
-```go
-logrus.WithFields(logrus.Fields{
-	"latency" : time.Since(start),
-	})
-```
-
-Google Cloud understands special request-related fields, and are put in the `httpRequest` field in the log entry. 
-
-If you use a Google managed service (such as Cloud Run or App Engine) and provide the trace context to the logger, there's no need to log these fields explicitly. GCP will log a master record for each request that with the HTTP Request information. By connecting individual log entries to the master record via the trace ID, the information is already available. 
-
-However, if you need to log this separately, GCPLog defines constants for a few of them. 
-
-| Key | Sample Use |
-| --- | --- | 
-| gcpLog.RequestMethod | "GET" |
-| gcpLog.RequestURL | "https://blah.com/MyAPIName" |
-| gcpLog.Latency | 123ms |
-| gcpLog.HTTPStatus | 200 |
-
-You MUST set the gcpLog.RequestMethod field for GCPLog to recognize that you are passing these values, otherwise no `httpRequest` entry will be created.
-
-
 
 ### GRPC Status
-When providing a gRPC status for an API using the standard gRPC status (https://godoc.org/google.golang.org/grpc/status), you can log this directly to GCPLog with the key gcpLog.GrpcStatus. GCPLog will recognize the gRPC status and log each field separately. 
+When returning an error from a gRPC API handler, the recommended error type to return is a Status from the gRPC Status package (https://godoc.org/google.golang.org/grpc/status). The Status type encapsulates the error code, a message additional details. See https://cloud.google.com/apis/design/errors for more information on the fields. 
 
-See https://cloud.google.com/apis/design/errors for more information on the fields. 
+Google Cloud Logging does not provide gRPC status fields, but we can log it as a custom JSON object so that the individual fields are preserved (as opposed to logging it as a single string). 
 
-Example:
+You could do this "manually" with logrus's WithFields, but GCPLog gives you convenience functions for Info, Warn and Error. 
 
 ```go
 
-logrus.WithField(gcplog.GrpcStatus, status.Errorf(codes.NotFound, "blah with key %s not found", "myid")).Info("Blah")
+	// in my gRPC API handler
+	... 
 
+	if err != nil {
+		err = status.Errorf(codes.NotFound, "blah with key '%s' not found: %v", "myid", err)
+		gcplog.GrpcInfo(ctx, err)
+		return nil, err
+	}
 	// Output:
-	// {"message":"Blah","severity":"INFO","grpc":{"code":"NotFound","message":"blah with key myid not found"}}
-```
+	// {"message":"blah with key 'myid' not found","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","grpc":{"code":"NotFound","message":"blah with key 'myid' not found"}}
 
-
-### Basic Usage
-
-See the examples for more.
-
-```go 
-import (
-	"github.com/ezachrisen/gcplog"
-	"github.com/sirupsen/logrus"
-)
-
-func main() {
-	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
-
-	logrus.Info("Hello")
-
-	logrus.WithFields(logrus.Fields{
-		"animal": "walrus",
-		"number": 1,
-	}).Info("My info message here")
-
-	// Output:
-	// {"message":"Hello","severity":"INFO"}
-	// {"message":"My info message here","severity":"INFO","additional_info":{"animal":"walrus","number":1}}
-}
 ```
 
 ### Console Formatter
