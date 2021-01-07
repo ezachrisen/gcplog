@@ -83,12 +83,22 @@ if err != nil {
 	gcplog.GrpcInfo(ctx, err)
 	return nil, err
 }
-// Output:
-// {"message":"blah with key 'myid' not found","severity":"INFO",
-// "logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667",
-// "logging.googleapis.com/sourceLocation":{"file":"example_test.go",
-// "line":83,"function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"},
-// "grpc":{"code":"NotFound","message":"blah with key 'myid' not found"}}
+
+// Output
+{
+   "message":"blah with key 'myid' not found",
+   "severity":"INFO",
+   "logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667",
+   "logging.googleapis.com/sourceLocation":{
+      "file":"example_test.go",
+      "line":83,
+      "function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"
+   },
+   "grpc":{
+      "code":"NotFound",
+      "message":"blah with key 'myid' not found"
+   }
+}
 
 ```
 
