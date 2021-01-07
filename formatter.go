@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"runtime"
 	"runtime/debug"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"go.opencensus.io/trace"
@@ -13,8 +15,9 @@ import (
 )
 
 const (
-	GrpcStatus             = "grpcStatus"
-	GrpcStatusBlankMessage = "!"
+	GrpcStatus                      = "grpcStatus"
+	GrpcStatusBlankMessage          = "!"
+	grpcStatusCalledFromConvenience = "grpcStatusCalledFromConvenience"
 )
 
 type Formatter struct {
@@ -116,9 +119,31 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 				if len(s.Details()) > 0 {
 					e.GRPCStatus.Details = fmt.Sprintf("%v", s.Details())
 				}
+				// Remove the GRPC data from the "additional" fields, otherwise it will be printed twice
 				delete(entry.Data, GrpcStatus)
+
+				// Set the log's Message to the message from the GRPC status, if the string passed to
+				// .Info or .Warn, etc., is the special constant, which indicates that we should take the
+				// message from the gRPC status.
 				if entry.Message == GrpcStatusBlankMessage {
 					e.Message = s.Message()
+				}
+
+				// If the user turned on file location information for the logger,
+				// we need to fetch the location ourselves (overriding the info already collected by Logrus).
+				// This is because we use a convenience wrapper function to call logrus.Info, which makes
+				// the wrapper function the calling location.
+				if _, ok := entry.Data[grpcStatusCalledFromConvenience]; ok {
+					if entry.Caller != nil {
+						if file, function, line, ok := callerInfo(7); ok {
+							e.SourceLocation = &sourceLocation{
+								File:     file,
+								Line:     line,
+								Function: function,
+							}
+						}
+					}
+					delete(entry.Data, grpcStatusCalledFromConvenience)
 				}
 			}
 		}
@@ -133,13 +158,37 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func GrpcInfo(ctx context.Context, err error) {
-	logrus.WithContext(ctx).WithField(GrpcStatus, err).Info(GrpcStatusBlankMessage)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		GrpcStatus:                      err,
+		grpcStatusCalledFromConvenience: ""}).Info(GrpcStatusBlankMessage)
 }
 
 func GrpcWarn(ctx context.Context, err error) {
-	logrus.WithContext(ctx).WithField(GrpcStatus, err).Warn(GrpcStatusBlankMessage)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		GrpcStatus:                      err,
+		grpcStatusCalledFromConvenience: ""}).Warn(GrpcStatusBlankMessage)
 }
 
 func GrpcError(ctx context.Context, err error) {
-	logrus.WithContext(ctx).WithField(GrpcStatus, err).Error(GrpcStatusBlankMessage)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		GrpcStatus:                      err,
+		grpcStatusCalledFromConvenience: ""}).Error(GrpcStatusBlankMessage)
+}
+
+func callerInfo(skip int) (file, function string, line int, ok bool) {
+	pc, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		file = "<???>"
+		return file, function, line, false
+	}
+	slash := strings.LastIndex(file, "/")
+	if slash >= 0 {
+		file = file[slash+1:]
+	}
+
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		function = details.Name()
+	}
+	return file, function, line, true
 }

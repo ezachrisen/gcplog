@@ -3,6 +3,7 @@ package gcplog_test
 import (
 	"context"
 	"os"
+	"strconv"
 
 	"github.com/ezachrisen/gcplog"
 	"github.com/sirupsen/logrus"
@@ -70,6 +71,7 @@ func ExampleGrpcStatusConvenience() {
 
 	logrus.SetOutput(os.Stdout) // required for testing only
 	logrus.SetFormatter(&gcplog.Formatter{ProjectID: "myproject"})
+	logrus.SetReportCaller(true)
 
 	var dummyTraceID [16]byte
 	copy(dummyTraceID[:], "123456789abcdefg")
@@ -79,7 +81,15 @@ func ExampleGrpcStatusConvenience() {
 		},
 	)
 
-	gcplog.GrpcInfo(ctx, status.Errorf(codes.NotFound, "blah with key '%s' not found", "myid"))
+	s := "definitely not an int"
+	_, err := strconv.ParseInt(s, 10, 32)
+
+	if err != nil {
+		err = status.Errorf(codes.InvalidArgument, "expected an integer, got '%s': %v", s, err)
+		gcplog.GrpcInfo(ctx, err)
+		// in a gRPC API handler:
+		// return nil, err
+	}
 	// Output:
-	// {"message":"blah with key 'myid' not found","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","grpc":{"code":"NotFound","message":"blah with key 'myid' not found"}}
+	// {"message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","logging.googleapis.com/sourceLocation":{"file":"example_test.go","line":89,"function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"},"grpc":{"code":"InvalidArgument","message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax"}}
 }

@@ -1,7 +1,5 @@
 # GCPLog
 
-Go log printer for Google Cloud Platform using Logrus.
-
 GCPLog formats [logrus](https://github.com/sirupsen/logrus) output for Google Cloud Platform:
 - Errors are sent to Google Error Reporting with a stacktrace
 - Code calling location is formatted with file, line and module
@@ -85,7 +83,7 @@ You could do this "manually" with logrus's WithFields, but GCPLog gives you conv
 		return nil, err
 	}
 	// Output:
-	// {"message":"blah with key 'myid' not found","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","grpc":{"code":"NotFound","message":"blah with key 'myid' not found"}}
+	// {"message":"blah with key 'myid' not found","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","logging.googleapis.com/sourceLocation":{"file":"example_test.go","line":83,"function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"},"grpc":{"code":"NotFound","message":"blah with key 'myid' not found"}}
 
 ```
 
