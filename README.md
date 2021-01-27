@@ -102,5 +102,48 @@ if err != nil {
 
 ```
 
+
+### Custom Metadata in the Context
+Sometimes it is useful to include standard fields in every log message. Logrus provides the ability to do that like so:
+
+```go
+	logger := log.WithContext(ctx).WithFields(
+		log.Fields{
+			"sessionID":       sessionID,  // pulled out of the context
+		},
+	)
+```
+
+However, the new ```logger``` must be passed around to other functions. 
+
+The standard way to carry request-specific information is via the Go context. (Note: we should not pass the logger itself via the context; context is for data only.) Gcplog will take context metadata that you specify and include them as JSON in the additional_info field.
+
+```go
+
+// When initializing your application
+// Create a context key. See the godoc for context keys. 
+type contextKey string
+myKey := contextKey("mykeyname")
+
+logrus.SetFormatter(&gcplog.Formatter{
+		ProjectID:   "myproject",
+		// Tell Gcplog about your context key and what name you want it to have in the additional_info field
+		ContextKeys: map[string]interface{}{"session_id": myKey},		
+	})
+
+// When the request is received
+ctx = context.WithValue(ctx, myKey, "1239828228")
+
+// When a log entry is made, anywhere in the app, as long as the context
+// is passed down. 
+logrus.WithContext(ctx).Info("Hello")
+// Output:
+// {"message":"Hello","severity":"INFO","additional_info":{"session_id":"1239828228"}}
+
+```
+
+Make sure you call logrus with WithContext(ctx) to pass the context to logrus. 
+
+
 ### Console Formatter
 For local debugging and testing, a bare-bones formatter is provided. This is indentended to log to the terminal. 

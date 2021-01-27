@@ -29,6 +29,27 @@ func ExampleBasic() {
 	// {"message":"My info message here","severity":"INFO","additional_info":{"animal":"walrus","number":1}}
 }
 
+func ExampleCustomMetadata() {
+
+	type contextKey string
+
+	myKey := contextKey("mykeyname")
+
+	logrus.SetOutput(os.Stdout) // required for testing only
+	logrus.SetFormatter(&gcplog.Formatter{
+		ProjectID:   "myproject",
+		ContextKeys: map[string]interface{}{"session_id": myKey},
+	})
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, myKey, "1239828228")
+
+	logrus.WithContext(ctx).Info("Hello")
+
+	// Output:
+	// {"message":"Hello","severity":"INFO","additional_info":{"session_id":"1239828228"}}
+}
+
 func ExampleTraceID() {
 
 	logrus.SetOutput(os.Stdout) // required for testing only
@@ -91,5 +112,5 @@ func ExampleGrpcStatusConvenience() {
 		// return nil, err
 	}
 	// Output:
-	// {"message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","logging.googleapis.com/sourceLocation":{"file":"example_test.go","line":89,"function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"},"grpc":{"code":"InvalidArgument","message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax"}}
+	// {"message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax","severity":"INFO","logging.googleapis.com/trace":"projects/myproject/traces/31323334353637383961626364656667","logging.googleapis.com/sourceLocation":{"file":"example_test.go","line":110,"function":"github.com/ezachrisen/gcplog_test.ExampleGrpcStatusConvenience"},"grpc":{"code":"InvalidArgument","message":"expected an integer, got 'definitely not an int': strconv.ParseInt: parsing \"definitely not an int\": invalid syntax"}}
 }
